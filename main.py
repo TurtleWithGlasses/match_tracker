@@ -9,7 +9,7 @@ wb = None
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("650x800")
+        self.geometry("700x800")
         self.title("Match Tracker")
         self.resizable(False, False)
 
@@ -135,7 +135,6 @@ class App(ctk.CTk):
 
             self.record_time.configure(text=f"Record Time: {seconds:02d}s {milliseconds:03d}ms")
             self.start_record_time = None  # Stop the recording here
-            self.record_time_label.configure(text="Recorded Intervals: 00:00:00")
 
             #Save to excel
             self.save_to_excel(self.record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds)
@@ -156,8 +155,7 @@ class App(ctk.CTk):
                 record_str = f"Record#{i+1} -- {recorded_seconds:02d}s -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
                 self.record_text.insert(tk.END, record_str)
             
-            self.record_start_time = None
-            self.recorded_time_label.configure(text="Recorded Intervals: 00:00:00")
+            self.record_start_time = None            
 
     def update_timer(self):
         if self.timer_running:
