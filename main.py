@@ -9,7 +9,7 @@ wb = None
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("600x800")
+        self.geometry("650x800")
         self.title("Match Tracker")
         self.resizable(False, False)
 
@@ -24,11 +24,13 @@ class App(ctk.CTk):
         self.record_times = []
         self.total_recorded_time = 0
         self.record_number = 0
+        self.record_start_time = None        
 
         self.create_frames()
         self.create_buttons()
         self.create_timer_label()
         self.create_record_label()
+        self.create_record_time_label()
 
     def create_frames(self):
         self.frame_for_buttons = ctk.CTkFrame(self)
@@ -82,6 +84,15 @@ class App(ctk.CTk):
         )
         self.record_time.pack(side=tk.BOTTOM, pady=10)
 
+    def create_record_time_label(self):
+        self.record_time_label = ctk.CTkLabel(
+            self.frame_for_buttons,
+            text="Recorded Intervals: 00:00:00",
+            font=("Arial", 15),
+            justify="center"
+        )
+        self.record_time_label.pack(side=tk.BOTTOM, pady=10)
+
     def play(self):
         if not self.timer_running:
             if self.start_time is None:
@@ -108,6 +119,7 @@ class App(ctk.CTk):
         if not self.start_record_time and self.timer_running:
             self.start_record_time = time()
             self.record_number += 1
+            self.record_start_time = time()
 
     def stop_record(self, event):
         if self.start_record_time:
@@ -122,14 +134,15 @@ class App(ctk.CTk):
             seconds = int(elapsed_time)
 
             self.record_time.configure(text=f"Record Time: {seconds:02d}s {milliseconds:03d}ms")
-            self.start_record_time = None
+            self.start_record_time = None  # Stop the recording here
+            self.record_time_label.configure(text="Recorded Intervals: 00:00:00")
 
             #Save to excel
             self.save_to_excel(self.record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds)
 
             # Get current text in the text widget and append the new recorded time
             self.record_text.get("1.0", tk.END).strip()
-            new_record = f"Recorded time: {seconds:02d}:{milliseconds:03d}s"
+            new_record = f"Recorded Intervals: {seconds:02d}:{milliseconds:03d}s"
             self.record_text.insert(tk.END, f"{new_record}\n")
 
             # Update the total recorded time
@@ -143,7 +156,9 @@ class App(ctk.CTk):
                 record_str = f"Record#{i+1} -- {recorded_seconds:02d}s -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
                 self.record_text.insert(tk.END, record_str)
             
-            
+            self.record_start_time = None
+            self.recorded_time_label.configure(text="Recorded Intervals: 00:00:00")
+
     def update_timer(self):
         if self.timer_running:
             elapsed_time = time() - self.start_time
@@ -154,6 +169,13 @@ class App(ctk.CTk):
 
             self.timer_label.configure(text=f"Time: {hours:02d}:{minutes:02d}:{seconds:02d}:{milliseconds:03d}")
             self.after(1, self.update_timer)
+        
+            if self.record_start_time:
+                elapsed_time = time() - self.record_start_time
+                seconds = int(elapsed_time)
+                milliseconds = int((elapsed_time % 1) * 1000)
+
+                self.record_time_label.configure(text=f"Recorded Intervals: {seconds:02d}:{milliseconds:03d}")
 
     def update_total_recorded_time_label(self):
         milliseconds = int((self.total_recorded_time %1) * 1000)
@@ -162,21 +184,20 @@ class App(ctk.CTk):
         self.total_recorded_time_label.configure(text=total_recorded_time_str)
 
     def update_recorded_time_label(self):
-        total_seconds = self.total_recorded_time
-        milliseconds = total_seconds % 1000 
-        hours = total_seconds // 3600
-        total_seconds %= 3600
-        minutes = total_seconds // 60
-        seconds = total_seconds % 60        
+        if self.record_start_time:
+            elapsed_time = time() - self.record_start_time
+            seconds = int(elapsed_time)
+            milliseconds = int((elapsed_time % 1) * 1000)
 
-        self.total_recorded_time_label.configure(text=f"Total recorded time: {hours:02d}:{minutes:02d}:{seconds:02d}:{milliseconds:03d}")
-    
+            self.recorded_time_label.configure(text=f"Recorded Intervals: {seconds:02d}:{milliseconds:03d}")
+            self.after(1, self.update_recorded_time_label)
+
+
     def clear_records(self):
         self.record_text.delete("1.0", tk.END)
         self.record_times = []
         self.total_recorded_time = 0
         self.update_total_recorded_time_label()
-        # self.save_to_excel()
         
     def save_to_excel(self, record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds):
         global wb
@@ -195,6 +216,7 @@ class App(ctk.CTk):
 
         except Exception as e:
             print(f"Error saving to excel {e}")
+
 
 if __name__ == "__main__":
     App().mainloop()
