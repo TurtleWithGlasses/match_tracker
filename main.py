@@ -50,9 +50,6 @@ class App(ctk.CTk):
         )
         self.total_recorded_time_label.pack(side=tk.BOTTOM, pady=10, fill=tk.X)
 
-        self.recorded_time_label = ctk.CTkLabel(self.frame_for_result, text="00:00:00")
-        self.recorded_time_label.pack(side=tk.BOTTOM)
-
     def create_buttons(self):
         play_button = ctk.CTkButton(self.frame_for_buttons, text="Play", command=self.play)
         play_button.pack(side=tk.TOP, padx=10, pady=5)
@@ -185,17 +182,23 @@ class App(ctk.CTk):
         if self.record_start_time:
             elapsed_time = time() - self.record_start_time
             seconds = int(elapsed_time)
-            milliseconds = int((elapsed_time % 1) * 1000)
+            milliseconds = int((elapsed_time % 1) * 1000)            
+        else:
+            seconds = 0
+            milliseconds = 0
 
-            self.recorded_time_label.configure(text=f"Recorded Intervals: {seconds:02d}:{milliseconds:03d}")
-            self.after(1, self.update_recorded_time_label)
-
+        self.record_time_label.configure(text=f"Recorded Intervals: {seconds:02d}:{milliseconds:03d}")
+        self.after(1, self.update_recorded_time_label) 
 
     def clear_records(self):
         self.record_text.delete("1.0", tk.END)
         self.record_times = []
         self.total_recorded_time = 0
         self.update_total_recorded_time_label()
+        self.record_number = 0
+        self.start_record_time = None
+        self.update_recorded_time_label()
+        self.record_time.configure(text="Record Time: 00:00:00")
         
     def save_to_excel(self, record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds):
         global wb
