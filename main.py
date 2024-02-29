@@ -11,7 +11,7 @@ class App(ctk.CTk):
         super().__init__()
         self.geometry("700x800")
         self.title("Match Tracker")
-        self.resizable(False, False)
+        self.resizable(True, True)
 
         self.frame_for_buttons = None
         self.frame_for_result = None
@@ -39,8 +39,7 @@ class App(ctk.CTk):
         self.frame_for_result = ctk.CTkFrame(self, bg_color="white")
         self.frame_for_result.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.record_text = tk.Text(self.frame_for_result)
-        self.record_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        self.record_text = tk.Text(self.frame_for_result)        
         self.record_text.configure(font=("Arial", 20))
 
         self.total_recorded_time_label = ctk.CTkLabel(
@@ -48,7 +47,10 @@ class App(ctk.CTk):
             text="Total recorded time: 00:00:00", 
             justify="center"
         )
+
+        self.record_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)  
         self.total_recorded_time_label.pack(side=tk.BOTTOM, pady=10, fill=tk.X)
+              
 
     def create_buttons(self):
         play_button = ctk.CTkButton(self.frame_for_buttons, text="Play", command=self.play)
@@ -61,25 +63,21 @@ class App(ctk.CTk):
         stop_button.pack(side=tk.TOP, padx=10, pady=5)
 
         self.record_button = ctk.CTkButton(self.frame_for_buttons, text="Record")
-        self.record_button.pack(side=tk.BOTTOM, padx=10, pady=5)
+        
+        self.record_button.bind("<KeyPress-r>", self.start_record)
         self.record_button.bind("<Button-1>", self.start_record)
-        self.record_button.bind("<ButtonRelease-1>", self.stop_record)
+        self.record_button.bind("<ButtonRelease-1>", self.stop_record)        
 
         self.clear_records_button = ctk.CTkButton(self.frame_for_buttons, text="Clear Record", command=self.clear_records)
-        self.clear_records_button.pack(side=tk.BOTTOM, padx=10, pady=5)
+
+        self.record_button.pack(side=tk.TOP, padx=10, pady=5)
+        self.clear_records_button.pack(side=tk.TOP, padx=10, pady=5)
+        
 
     def create_timer_label(self):
-        self.timer_label = ctk.CTkLabel(self.frame_for_buttons, text="Time: 00:00:00")
-        self.timer_label.pack(side=tk.TOP, pady=10)
+        self.timer_label = ctk.CTkLabel(self.frame_for_buttons, text="Time: 00:00:00", font=("Arial", 15))
+        self.timer_label.pack(side=tk.TOP, pady=10, padx=5)
 
-    def create_record_label(self):
-        self.record_time = ctk.CTkLabel(
-            self.frame_for_buttons, 
-            text="Record Time: 00:00:00", 
-            font=("Arial", 15),
-            justify="center"
-        )
-        self.record_time.pack(side=tk.BOTTOM, pady=10)
 
     def create_record_time_label(self):
         self.record_time_label = ctk.CTkLabel(
@@ -88,7 +86,17 @@ class App(ctk.CTk):
             font=("Arial", 15),
             justify="center"
         )
-        self.record_time_label.pack(side=tk.BOTTOM, pady=10)
+        self.record_time_label.pack(side=tk.TOP, pady=10, padx=5)
+
+    def create_record_label(self):
+        self.record_time = ctk.CTkLabel(
+            self.frame_for_buttons, 
+            text="Record Time: 00:00:00", 
+            font=("Arial", 15),
+            justify="center"
+        )
+        self.record_time.pack(side=tk.TOP, pady=10, padx=5)
+
 
     def play(self):
         if not self.timer_running:
@@ -122,6 +130,7 @@ class App(ctk.CTk):
         if self.start_record_time:
             elapsed_time = time() - self.start_record_time
             recorded_seconds = int(elapsed_time)
+            recorded_milliseconds = int((elapsed_time % 1) * 1000)
 
             timer_elapsed = time() - self.start_time
             timer_hours = int(timer_elapsed // 3600)
@@ -145,11 +154,11 @@ class App(ctk.CTk):
             self.total_recorded_time += recorded_seconds
             total_recorded_time_str = f"Total recorded time: {self.total_recorded_time//3600:02d}:{(self.total_recorded_time%3600)//60:02d}:{self.total_recorded_time%60:02d}"
             self.total_recorded_time_label.configure(text=total_recorded_time_str)
-            self.record_times.append((recorded_seconds, (timer_hours,timer_minutes, timer_seconds)))
+            self.record_times.append((recorded_seconds, recorded_milliseconds, (timer_hours,timer_minutes,timer_seconds)))
 
             self.record_text.delete("1.0", tk.END)
-            for i, (recorded_seconds, timer_value) in enumerate(self.record_times):
-                record_str = f"Record#{i+1} -- {recorded_seconds:02d}s -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
+            for i, (recorded_seconds, recorded_milliseconds, timer_value) in enumerate(self.record_times):
+                record_str = f"Record#{i+1} -- {recorded_seconds:02d}s {recorded_milliseconds:3d}ms -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
                 self.record_text.insert(tk.END, record_str)
             
             self.record_start_time = None            
@@ -175,7 +184,7 @@ class App(ctk.CTk):
     def update_total_recorded_time_label(self):
         milliseconds = int((self.total_recorded_time %1) * 1000)
         seconds = int(self.total_recorded_time)
-        total_recorded_time_str = f"Total recorded time: {seconds:02d}s {milliseconds:03d}ms"
+        total_recorded_time_str = f"Total recorded time: {seconds:02d}s :{milliseconds:03d}ms"
         self.total_recorded_time_label.configure(text=total_recorded_time_str)
 
     def update_recorded_time_label(self):
@@ -206,7 +215,7 @@ class App(ctk.CTk):
             if wb is None:
                 wb = Workbook()
                 ws = wb.active
-                ws.append(["Record Number","Record Time (ms)","Total Time (HH:MM:SS)"])
+                ws.append(["Record Number","Recorded Intervals (ms)","Total Time (HH:MM:SS)"])
             
             ws = wb.active
             raw_data = [record_number, recorded_seconds, f"{timer_hours:02d}:{timer_minutes:02d}:{timer_seconds:02d}"]
