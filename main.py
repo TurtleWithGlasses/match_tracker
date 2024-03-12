@@ -1,3 +1,4 @@
+
 import customtkinter as ctk
 import tkinter as tk
 from time import time
@@ -130,7 +131,6 @@ class App(ctk.CTk):
         if self.start_record_time:
             elapsed_time = time() - self.start_record_time
             recorded_seconds = int(elapsed_time)
-            recorded_milliseconds = int((elapsed_time % 1) * 1000)
 
             timer_elapsed = time() - self.start_time
             timer_hours = int(timer_elapsed // 3600)
@@ -143,7 +143,7 @@ class App(ctk.CTk):
             self.start_record_time = None  # Stop the recording here
 
             #Save to excel
-            self.save_to_excel(self.record_number, recorded_seconds, recorded_milliseconds, timer_hours, timer_minutes, timer_seconds)
+            self.save_to_excel(self.record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds)
 
             # Get current text in the text widget and append the new recorded time
             self.record_text.get("1.0", tk.END).strip()
@@ -154,11 +154,11 @@ class App(ctk.CTk):
             self.total_recorded_time += recorded_seconds
             total_recorded_time_str = f"Total recorded time: {self.total_recorded_time//3600:02d}:{(self.total_recorded_time%3600)//60:02d}:{self.total_recorded_time%60:02d}"
             self.total_recorded_time_label.configure(text=total_recorded_time_str)
-            self.record_times.append((recorded_seconds, recorded_milliseconds, (timer_hours,timer_minutes,timer_seconds)))
+            self.record_times.append((recorded_seconds, (timer_hours,timer_minutes, timer_seconds)))
 
             self.record_text.delete("1.0", tk.END)
-            for i, (recorded_seconds, recorded_milliseconds, timer_value) in enumerate(self.record_times):
-                record_str = f"Record#{i+1} -- {recorded_seconds:02d}s :{recorded_milliseconds:3d}ms -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
+            for i, (recorded_seconds, timer_value) in enumerate(self.record_times):
+                record_str = f"Record#{i+1} -- {recorded_seconds:02d}s -- (Match Time:{timer_value[0]:2d}:{timer_value[1]:02d}:{timer_value[2]:02d})\n"
                 self.record_text.insert(tk.END, record_str)
             
             self.record_start_time = None            
@@ -209,20 +209,20 @@ class App(ctk.CTk):
         self.update_recorded_time_label()
         self.record_time.configure(text="Record Time: 00:00:00")
         
-    def save_to_excel(self, record_number, recorded_seconds, recorded_milliseconds, timer_hours, timer_minutes, timer_seconds):
+    def save_to_excel(self, record_number, recorded_seconds, timer_hours, timer_minutes, timer_seconds):
         global wb
         try:
             if wb is None:
                 wb = Workbook()
                 ws = wb.active
-                ws.append(["Record Number", "Recorded Intervals (s:ms)", "Total Time (HH:MM:SS)"])
-
+                ws.append(["Record Number","Record Time (ms)","Total Time (HH:MM:SS)"])
+            
             ws = wb.active
-            raw_data = [record_number, f"{recorded_seconds:02d}:{recorded_milliseconds:02d}", f"{timer_hours:02d}:{timer_minutes:02d}:{timer_seconds:02d}"]
+            raw_data = [record_number, recorded_seconds, f"{timer_hours:02d}:{timer_minutes:02d}:{timer_seconds:02d}"]
             ws.append(raw_data)
-
+            
             wb.save("match_data.xlsx")
-            print("Excel saved successfully")
+            print("Excel saved succesfully")
 
         except Exception as e:
             print(f"Error saving to excel {e}")
